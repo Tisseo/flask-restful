@@ -30,7 +30,7 @@ class MarshallingException(Exception):
 
 
 def is_indexable_but_not_string(obj):
-    return not hasattr(obj, "strip") and hasattr(obj, "__iter__")
+    return not hasattr(obj, "strip") and (hasattr(obj, "__iter__") or hasattr(obj, "__getitem__"))
 
 
 def get_value(key, obj, default=None):
@@ -139,9 +139,10 @@ class Nested(Raw):
         null)
     """
 
-    def __init__(self, nested, allow_null=False, **kwargs):
+    def __init__(self, nested, allow_null=False, display_null=True, **kwargs):
         self.nested = nested
         self.allow_null = allow_null
+        self.display_null = display_null
         super(Nested, self).__init__(**kwargs)
 
     def output(self, key, obj):
@@ -152,7 +153,7 @@ class Nested(Raw):
             elif self.default is not None:
                 return self.default
 
-        return marshal(value, self.nested)
+        return marshal(value, self.nested, display_null=self.display_null)
 
 
 class List(Raw):
