@@ -165,10 +165,11 @@ class List(Raw):
     :param cls_or_instance: The field type the list will contain.
     """
 
-    def __init__(self, cls_or_instance, **kwargs):
+    def __init__(self, cls_or_instance, display_empty=True, **kwargs):
         super(List, self).__init__(**kwargs)
         error_msg = ("The type of the list elements must be a subclass of "
                      "flask_restful.fields.Raw")
+        self.display_empty = display_empty
         if isinstance(cls_or_instance, type):
             if not issubclass(cls_or_instance, Raw):
                 raise MarshallingException(error_msg)
@@ -198,12 +199,19 @@ class List(Raw):
         value = get_value(key if self.attribute is None else self.attribute, data)
         # we cannot really test for external dict behavior
         if is_indexable_but_not_string(value) and not isinstance(value, dict):
-            return self.format(value)
+            if not self.display_empty and len(value) == 0:
+                return None
+            return [self.container.output(idx, value) for idx, val
+                    in enumerate(value)]
+            #return self.format(value)
 
         if value is None:
             return self.default
-
-        return [marshal(value, self.container.nested)]
+        l = [marshal(v, self.container.nested, self.display_empty) for v in value]
+        if not self.display_empty and not l:
+            return None
+        else:
+            return l
 
 
 class String(Raw):
